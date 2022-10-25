@@ -7,7 +7,6 @@ rust-version = "1.60"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-
 [dependencies]
 egui = "0.19.0"
 eframe = { version = "0.19.0", features = ["persistence"] }
@@ -22,10 +21,9 @@ tracing-subscriber = "0.3"
 console_error_panic_hook = "0.1.6"
 tracing-wasm = "0.2"
 
-
 [profile.release]
-opt-level = 2 # fast and small wasm
-
+opt-level = 's' # fast and small wasm
+lto = true
 
 [patch.crates-io]
 
