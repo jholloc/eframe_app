@@ -1,3 +1,80 @@
+use serde::{Deserialize, Serialize};
+use poll_promise::Promise;
+use serde_json::Value;
+
+#[derive(Serialize, Deserialize)]
+struct Data {
+    #[serde(rename = "_dtype")]
+    dtype: String,
+    #[serde(rename = "_encoding")]
+    encoding: String,
+    value: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Dim {
+    #[serde(rename = "_type")]
+    obj_type: String,
+    data: Data,
+    label: String,
+    units: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Meta {
+    exp_number: i32,
+    filename: String,
+    format: String,
+    pass: i32,
+    pass_date: String,
+    path: String,
+    signal_alias: String,
+    signal_name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Signal {
+    #[serde(rename = "_type")]
+    obj_type: String,
+    data: Data,
+    dims: Vec<Dim>,
+    label: String,
+    meta: Meta,
+    units: String,
+}
+
+struct SignalResource {
+    response: ehttp::Response,
+    signal: Option<Signal>,
+}
+
+impl SignalResource {
+    fn from_response(_ctx: &egui::Context, response: ehttp::Response) -> Self {
+        let text = response.text().unwrap();
+        let signal: Signal = serde_json::from_str(text).unwrap();
+        Self {
+            response,
+            signal: Some(signal),
+        }
+    }
+}
+
+struct SignalsResource {
+    response: ehttp::Response,
+    signals: Option<Value>,
+}
+
+impl SignalsResource {
+    fn from_response(_ctx: &egui::Context, response: ehttp::Response) -> Self {
+        let text = response.text().unwrap();
+        let signals: Value = serde_json::from_str(text).unwrap();
+        Self {
+            response,
+            signals: Some(signals),
+        }
+    }
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -8,6 +85,12 @@ pub struct TemplateApp {
     // this how you opt-out of serialization of a member
     #[serde(skip)]
     value: f32,
+
+    #[serde(skip)]
+    signals_promise: Option<Promise<ehttp::Result<SignalsResource>>>,
+
+    #[serde(skip)]
+    signal_promise: Option<Promise<ehttp::Result<SignalResource>>>,
 }
 
 impl Default for TemplateApp {
@@ -16,6 +99,8 @@ impl Default for TemplateApp {
             // Example stuff:
             label: "Hello World!".to_owned(),
             value: 2.7,
+            signals_promise: Default::default(),
+            signal_promise: Default::default(),
         }
     }
 }
@@ -37,15 +122,12 @@ impl TemplateApp {
 }
 
 impl eframe::App for TemplateApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let Self { label, value } = self;
+        let label = &mut self.label;
+        let value = &mut self.value;
+        // let Self { label, value, signals_promise, signal_promise } = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -77,6 +159,24 @@ impl eframe::App for TemplateApp {
                 *value += 1.0;
             }
 
+            let mut trigger_fetch = false;
+
+            if ui.button("Fetch").clicked() {
+                trigger_fetch = true;
+            }
+
+            if trigger_fetch {
+                let ctx = ctx.clone();
+                let (sender, promise) = Promise::new();
+                let request = ehttp::Request::get("http://localhost:5000/signals");
+                ehttp::fetch(request, move |response| {
+                    ctx.request_repaint();
+                    let resource = response.map(|response| SignalsResource::from_response(&ctx, response));
+                    sender.send(resource);
+                });
+                self.signals_promise = Some(promise);
+            }
+
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.0;
@@ -93,6 +193,7 @@ impl eframe::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+
             // The central panel the region left after adding TopPanel's and SidePanel's
 
             ui.heading("eframe template");
@@ -102,15 +203,42 @@ impl eframe::App for TemplateApp {
                 "Source code."
             ));
             egui::warn_if_debug_build(ui);
+
+            if let Some(promise) = &self.signals_promise {
+                if let Some(result) = promise.ready() {
+                    match result {
+                        Ok(resource) => {
+                            if let Some(signals) = &resource.signals {
+                                if let Some(map) = signals.as_object() {
+                                    for item in map.iter() {
+                                        ui.label(item.0);
+                                    }
+                                }
+                            }
+                        },
+                        Err(error) => {
+                            ui.colored_label(
+                                ui.visuals().error_fg_color,
+                                if error.is_empty() { "Error" } else { error },
+                            );
+                        },
+                    }
+                }
+            }
         });
 
-        if false {
-            egui::Window::new("Window").show(ctx, |ui| {
-                ui.label("Windows can be moved by dragging them.");
-                ui.label("They are automatically sized based on contents.");
-                ui.label("You can turn on resizing and scrolling if you like.");
-                ui.label("You would normally chose either panels OR windows.");
-            });
-        }
+        // if false {
+        //     egui::Window::new("Window").show(ctx, |ui| {
+        //         ui.label("Windows can be moved by dragging them.");
+        //         ui.label("They are automatically sized based on contents.");
+        //         ui.label("You can turn on resizing and scrolling if you like.");
+        //         ui.label("You would normally chose either panels OR windows.");
+        //     });
+        // }
+    }
+
+    /// Called by the frame work to save state before shutdown.
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
     }
 }
