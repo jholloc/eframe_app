@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use poll_promise::Promise;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize)]
@@ -44,23 +44,24 @@ struct Signal {
 }
 
 struct SignalResource {
-    response: ehttp::Response,
-    signal: Option<Signal>,
+    _response: ehttp::Response,
+    _signal: Option<Signal>,
 }
 
 impl SignalResource {
+    #[allow(dead_code)]
     fn from_response(_ctx: &egui::Context, response: ehttp::Response) -> Self {
         let text = response.text().unwrap();
         let signal: Signal = serde_json::from_str(text).unwrap();
         Self {
-            response,
-            signal: Some(signal),
+            _response: response,
+            _signal: Some(signal),
         }
     }
 }
 
 struct SignalsResource {
-    response: ehttp::Response,
+    _response: ehttp::Response,
     signals: Option<Value>,
 }
 
@@ -69,7 +70,7 @@ impl SignalsResource {
         let text = response.text().unwrap();
         let signals: Value = serde_json::from_str(text).unwrap();
         Self {
-            response,
+            _response: response,
             signals: Some(signals),
         }
     }
@@ -171,7 +172,8 @@ impl eframe::App for TemplateApp {
                 let request = ehttp::Request::get("http://localhost:5000/signals");
                 ehttp::fetch(request, move |response| {
                     ctx.request_repaint();
-                    let resource = response.map(|response| SignalsResource::from_response(&ctx, response));
+                    let resource =
+                        response.map(|response| SignalsResource::from_response(&ctx, response));
                     sender.send(resource);
                 });
                 self.signals_promise = Some(promise);
@@ -193,7 +195,6 @@ impl eframe::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-
             // The central panel the region left after adding TopPanel's and SidePanel's
 
             ui.heading("eframe template");
@@ -215,13 +216,13 @@ impl eframe::App for TemplateApp {
                                     }
                                 }
                             }
-                        },
+                        }
                         Err(error) => {
                             ui.colored_label(
                                 ui.visuals().error_fg_color,
                                 if error.is_empty() { "Error" } else { error },
                             );
-                        },
+                        }
                     }
                 }
             }
