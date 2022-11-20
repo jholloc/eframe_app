@@ -1,75 +1,80 @@
-# eframe template
+# WASM + WASI talk & demonstration codes
 
 [![dependency status](https://deps.rs/repo/github/emilk/eframe_template/status.svg)](https://deps.rs/repo/github/emilk/eframe_template)
 [![Build Status](https://github.com/emilk/eframe_template/workflows/CI/badge.svg)](https://github.com/emilk/eframe_template/actions?workflow=CI)
 
-This is a template repo for [eframe](https://github.com/emilk/egui/tree/master/crates/eframe), a framework for writing apps using [egui](https://github.com/emilk/egui/).
+This is a repo containing the different demonstration codes used in the included talk on
+WebAssembly (WASM) and the WebAssembly System Interface (WASI).
 
-The goal is for this to be the simplest way to get started writing a GUI app in Rust.
+Instructions building and running each demonstration is given below.
 
-You can compile your app natively or for the web, and share it using Github Pages.
+## Demo 1: Simple Function
 
-## Getting started
+In the simple_wasm folder.
 
-Start by clicking "Use this template" at https://github.com/emilk/eframe_template/ or follow [these instructions](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
+Build using:
 
-Change the name of the crate: Chose a good name for your project, and change the name to it in:
-* `Cargo.toml`
-    * Change the `package.name` from `eframe_template` to `your_crate`.
-    * Change the `package.authors`
-* `main.rs`
-    * Change `eframe_template::TemplateApp` to `your_crate::TemplateApp`
-* `index.html`
-    * Change the `<title>eframe template</title>` to `<title>your_crate</title>`. optional.
-* `assets/sw.js`
-  * Change the `'./eframe_template.js'` to `./your_crate.js` (in `filesToCache` array)
-  * Change the `'./eframe_template_bg.wasm'` to `./your_crate_bg.wasm` (in `filesToCache` array)
+```bash
+clang --target=wasm32 --no-standard-libraries -Wl,--export-all -Wl,--no-entry -o add.wasm add.c -Oz
+```
+Run the code by serving the included index.html via:
 
-### Learning about egui
+```bash
+python3 -m http.server
+```
 
-`src/app.rs` contains a simple example app. This is just to give some inspiration - most of it can be removed if you like.
+## Demo 2: emscripten
 
-The official egui docs are at <https://docs.rs/egui>. If you prefer watching a video introduction, check out <https://www.youtube.com/watch?v=NtUkr_z7l84>. For inspiration, check out the [the egui web demo](https://emilk.github.io/egui/index.html) and follow the links in it to its source code.
+Run the pyodide app, in the pyodide folder, using:
 
-### Testing locally
+```bash
+python3 app.py
+```
 
-Make sure you are using the latest version of stable rust by running `rustup update`.
+## Demo 3: Signal viewer
 
-`cargo run --release`
+In the root directory of this repo.
 
-On Linux you need to first run:
+Build and run the native app using:
 
-`sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev`
+```bash
+cargo run --release
+```
 
-On Fedora Rawhide you need to run:
+Build and run the WASM-based web app using:
 
-`dnf install clang clang-devel clang-tools-extra speech-dispatcher-devel libxkbcommon-devel pkg-config openssl-devel libxcb-devel fontconfig-devel`
+```bash
+trunk serve
+```
 
-### Web Locally
+## Demo 4: Image convolutions
 
-You can compile your app to [WASM](https://en.wikipedia.org/wiki/WebAssembly) and publish it as a web page.
+In the convolution directory.
 
-We use [Trunk](https://trunkrs.dev/) to build for web target.
-1. Install Trunk with `cargo install --locked trunk`.
-2. Run `trunk serve` to build and serve on `http://127.0.0.1:8080`. Trunk will rebuild automatically if you edit the project.
-3. Open `http://127.0.0.1:8080/index.html#dev` in a browser. See the warning below.
+Build and run the native app using:
 
-> `assets/sw.js` script will try to cache our app, and loads the cached version when it cannot connect to server allowing your app to work offline (like PWA).
-> appending `#dev` to `index.html` will skip this caching, allowing us to load the latest builds during development.
+```bash
+cmake -Bbuild -H. -GNinja
+ninja -C build
+./build/convolution
+```
 
-### Web Deploy
-1. Just run `trunk build --release`.
-2. It will generate a `dist` directory as a "static html" website
-3. Upload the `dist` directory to any of the numerous free hosting websites including [GitHub Pages](https://docs.github.com/en/free-pro-team@latest/github/working-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
-4. we already provide a workflow that auto-deploys our app to GitHub pages if you enable it.
-> To enable Github Pages, you need to go to Repository -> Settings -> Pages -> Source -> set to `gh-pages` branch and `/` (root).
->
-> If `gh-pages` is not available in `Source`, just create and push a branch called `gh-pages` and it should be available.
+Build and run the single-threaded WASM app using:
+```bash
+em++ main.cpp -fwasm-exceptions --preload-file photo.bmp -sALLOW_MEMORY_GROWTH --post-js post.js
+node a.out.js
+```
 
-You can test the template app at <https://emilk.github.io/eframe_template/>.
+Build and run the multithreaded WASM app using:
 
-## Updating egui
+```bash
+em++ main.cpp -fwasm-exceptions --preload-file photo.bmp -pthread -sPROXY_TO_PTHREAD -sALLOW_MEMORY_GROWTH -DTHREADS=1 --post-js post-threads.js
+node a.out.js
+```
 
-As of 2022, egui is in active development with frequent releases with breaking changes. [eframe_template](https://github.com/emilk/eframe_template/) will be updated in lock-step to always use the latest version of egui.
+Build and run the wasi-sdk app using:
 
-When updating `egui` and `eframe` it is recommended you do so one version at the time, and read about the changes in [the egui changelog](https://github.com/emilk/egui/blob/master/CHANGELOG.md) and [eframe changelog](https://github.com/emilk/egui/blob/master/crates/eframe/CHANGELOG.md).
+```bash
+${WASI_SDK}/bin/clang++ --sysroot=${WASI_SDK}/share/wasi-sysroot main.cpp -o main.wasm -fno-exceptions
+wasmer main.wasm
+```
