@@ -1,0 +1,7 @@
+a.out.*
+index.*
+main.wasm
+.idea
+build
+venv
+output.bmp
