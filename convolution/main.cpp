@@ -3,9 +3,10 @@
 #include <vector>
 #include <array>
 #include <numeric>
+#include <chrono>
 #ifdef THREADS
-#include <thread>
-#include <future>
+#  include <thread>
+#  include <future>
 #endif
 
 #ifdef __EXCEPTIONS
@@ -413,8 +414,13 @@ int main()
     }
     double scale = 1. / sum;
     std::cout << "performing convolution" << std::endl;
+    std::chrono::high_resolution_clock clock;
+    auto start = clock.now();
     perform_convolution(data, convolution, scale, true);
+    auto end = clock.now();
     std::cout << "done" << std::endl;
+    std::chrono::duration<double> delta = end - start;
+    std::cout << "took " << delta.count() << " seconds" << std::endl;
 
     img.write("output.bmp");
     std::cout << "file saved" << std::endl;

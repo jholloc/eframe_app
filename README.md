@@ -76,5 +76,5 @@ Build and run the wasi-sdk app using:
 
 ```bash
 ${WASI_SDK}/bin/clang++ --sysroot=${WASI_SDK}/share/wasi-sysroot main.cpp -o main.wasm -fno-exceptions
-wasmer main.wasm
+wasmer run --dir . main.wasm
 ```

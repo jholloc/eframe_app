@@ -5,3 +5,4 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(convolution main.cpp)
 target_compile_definitions(convolution PRIVATE THREADS)
+target_compile_options(convolution PRIVATE -Oz)
