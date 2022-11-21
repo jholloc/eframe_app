@@ -5,7 +5,8 @@ slideNumber: true
 transition: convex
 width: 1024
 height: 800
-bg: lightblue
+bg: lightcyan
+enableOverview: true
 ---
 
 <!-- slide bg="[[webassembly-wasm.jpeg]]" data-background-opacity="0.2" -->
@@ -18,6 +19,7 @@ bg: lightblue
 Jonathan Hollocombe
 
 jonathan.hollocombe@ukaea.uk
+
 
 ---
 
@@ -59,7 +61,7 @@ add.c
 ```c
 int add(int first, int second)
 {
-	return first + second;
+    return first + second;
 }
 ```
 
@@ -92,15 +94,19 @@ add.wat
 
 ---
 
-## How to run it?
+## How it runs?
 
 - WebAssembly requires a stack-based virtual machine to run
 - This VM runs the compiled WASM module, providing an ArrayBuffer or SharedArrayBuffer that provide the memory space used, and interfaces to I/O, threads, exceptions, etc.
 
+---
+
+## How to run it?
+
 - WebAssembly can be run using:
-	- A browser with JavaScript glue code to instatiate the WASM module
-	- node.js with JavaScript glue code to instatiate the WASM module
-	- A WebAssembly runtime such as `wasmtime` or `wasmer`
+    - A browser with JavaScript glue code to instatiate the WASM module
+    - node.js with JavaScript glue code to instatiate the WASM module
+    - A WebAssembly runtime such as `wasmtime` or `wasmer`
 
 ---
 
@@ -109,7 +115,7 @@ add.wat
 ```c
 int add(int first, int second)
 {
-	return first + second;
+    return first + second;
 }
 ```
 
@@ -120,17 +126,17 @@ clang --target=wasm32 --no-standard-libraries -Wl,--export-all -Wl,--no-entry -o
 ```html
 <!DOCTYPE html>
 <html>
-  <head></head>
-  <body>
-    <script type="module">
-      (async() => {
-        const response = await fetch('add.wasm');
-        const bytes = await response.arrayBuffer();
-        const { instance } = await WebAssembly.instantiate(bytes);
-        window.alert('The answer is: ' + instance.exports.add(1, 2));
-      })();
-    </script>
-  </body>
+  <head></head>
+  <body>
+    <script type="module">
+      (async() => {
+        const response = await fetch('add.wasm');
+        const bytes = await response.arrayBuffer();
+        const { instance } = await WebAssembly.instantiate(bytes);
+         window.alert('The answer is: ' + instance.exports.add(1, 2));
+      })();
+    </script>
+  </body>
 </html>
 ```
 
@@ -158,7 +164,7 @@ note:
 ## Rust to WASM
 
 - Rust is a popular choice for high-level WebAssembly language
-	- No runtime, no exceptions, small standard library
+    - No runtime, no exceptions, small standard library
 - The Rust ecosystem has widely adopted WebAssembly - many libraries support wasm32 target
 - This tends to make compiling from Rust easier than C or C++
 
@@ -167,9 +173,9 @@ note:
 ## Demo 3: Signal viewer
 
 - A very rough signal viewer application
-	- Talks to a REST endpoint
-	- Displays available signals
-	- Plots 2D data where available
+    - Talks to a REST endpoint
+    - Displays available signals
+    - Plots 2D data where available
 - Compiled as a desktop application:
   ```bash
   cargo run
@@ -204,11 +210,17 @@ cmake -Bbuild -H. -GNinja
 ninja -C build
 ./build/convolution
 ```
+
+--
+
+## Demo 4: Image convolutions (part 2)
+
 WASM:
 ```bash
 em++ main.cpp -fwasm-exceptions --preload-file photo.bmp -sALLOW_MEMORY_GROWTH --post-js post.js
 node a.out.js
 ```
+
 WASM+WASI:
 ```bash
 ${WASI_SDK}/bin/clang++ --sysroot=${WASI_SDK}/share/wasi-sysroot main.cpp -o main.wasm -fno-exceptions
@@ -220,8 +232,8 @@ ${WASI_SDK}/bin/clang++ --sysroot=${WASI_SDK}/share/wasi-sysroot main.cpp -o mai
 
 - No exceptions
 - No threads - this is work in progress
-- Issues processing very large file
-- Haven't tried Rust WASI yet
+- Had issues processing very large file
+- I've haven't tried Rust WASI yet so need to try this to see if more is currently possible
 
 ---
 
@@ -230,6 +242,11 @@ ${WASI_SDK}/bin/clang++ --sysroot=${WASI_SDK}/share/wasi-sysroot main.cpp -o mai
 - WebAssembly is way for leveraging the power of compiled high-level languages to write tools that can run on the Web
 - A lot of the tooling around WebAssembly in the browser is fairly mature, less so with running outside of the browser
 - Rust compilation for WASM is easier than for other compiled languages
+
+--
+
+## Conclusions (cont)
+
 - WASI is a fairly recent addition and still in development - the tooling and features need to be expanded before it is truly viable
 - WASM+WASI does have the potential for compiling sandboxed, portable code that can be run anywhere
 
@@ -243,14 +260,18 @@ Tools:
 - https://wasmer.io/
 - https://emscripten.org/
 
+
+--
+
+## Links (cont)
+
 Useful articles:
 - https://thenewstack.io/what-is-webassembly-and-why-do-you-need-it
 - https://scientificprogrammer.net/2019/08/18/what-the-heck-is-webassembly
 
 Demonstration code:
-- https://github.com/jholloc/eframe_app
+- https://github.com/jholloc/wasm_wasi_talk
 
 ---
-
 
 ![[quote.png]]
